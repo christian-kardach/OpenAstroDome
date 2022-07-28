@@ -17,7 +17,7 @@ int32_t Encoder::GetPosition()
     return position;
 }
 
-void updateEncoder(){
+void Encoder::updateEncoder(){
     int b = digitalRead(Encoder::_ENCB);
     if(b > 0){
         Encoder::encoderPosition++;

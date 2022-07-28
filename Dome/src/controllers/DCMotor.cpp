@@ -1,5 +1,4 @@
 #include "DCMotor.h"
-#include "Encoder.h"
 #if MOTOR_BOARD == MOTOR_CONTROLLER_BTS7960
 #include "BTS7960Controller.h"
 #elif MOTOR_BOARD == MOTOR_CONTROLLER_SHIELDMD10
@@ -9,7 +8,7 @@
 DCMotor::DCMotor(uint8_t stepPin, uint8_t enablePin, uint8_t directionPin, IStepGenerator& stepper, MotorSettings& settings)
 {
 	//the DCMotor class is made of an encoder and a PWM motor controller board. Inputs and functions are to emulate that of a stepper motor. Each "step" will increment the desired encoder position in the PID control loop
-    _encoder = Encoder(ENCODER_PIN_A, ENCODER_PIN_B);
+    _encoder = new Encoder(ENCODER_PIN_A, ENCODER_PIN_B);
 	configuration = &settings;
 	currentVelocity = 0;
     targetPosition = 0;

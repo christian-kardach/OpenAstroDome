@@ -11,6 +11,7 @@
 #include "NexDome.h"
 #include "IStepSequencer.h"
 #include "IStepGenerator.h"
+#include "Encoder.h"
 
 #if MOTOR_BOARD == MOTOR_CONTROLLER_BTS7960
 #include "BTS7960Controller.h"
@@ -62,7 +63,7 @@ class DCMotor : public IStepSequencer
 		MotorSettings* configuration;
 
 	private:
-		Encoder _encoder;
+		Encoder* _encoder;
 		IStepGenerator* stepGenerator;
 		int direction = +1;
 		int32_t targetPosition{};
