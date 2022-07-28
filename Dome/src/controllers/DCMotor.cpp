@@ -146,6 +146,7 @@ void DCMotor::moveToPosition(int32_t position)
 	currentAcceleration = accelerationFromRampTime() * direction;
 	energizeMotor();
 	startTime = millis();
+	isPIDMoving = true;
 
 	if (abs(currentVelocity) < minSpeed)
 		{
