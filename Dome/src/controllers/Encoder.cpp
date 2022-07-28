@@ -6,6 +6,7 @@ Encoder::Encoder(uint8_t ENCA, uint8_t ENCB)
     _ENCB = ENCB;
     pinMode(_ENCA, INPUT_PULLUP);
     pinMode(_ENCB, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(_ENCA),updateEncoder,RISING);
 }
 
 int32_t Encoder::GetPosition()
@@ -18,11 +19,9 @@ int32_t Encoder::GetPosition()
 }
 
 void Encoder::updateEncoder(){
-    int b = digitalRead(Encoder::_ENCB);
-    if(b > 0){
-        Encoder::encoderPosition++;
-    }
-    else{
-        Encoder::encoderPosition--;
-    }
+  if(digitalRead(_ENCB) > 0){
+    encoderPosition++;
+  } else{
+    encoderPosition--;
+  }
 }
