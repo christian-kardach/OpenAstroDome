@@ -2,6 +2,7 @@
 #define NEXDOME_H
 
 #include <Arduino.h>
+#include "Constants.h"
 
 /*
  * limits.h appears to have values that are not consistent
@@ -16,9 +17,22 @@ constexpr int32_t MinStepPosition = -2000000000L;
 #define MIN_SPEED (250)         // Minimum speed that can be timed by the hardware timer
 #define MIN_RAMP_TIME (100)     // Minimum ramp up/down time in milliseconds
 
-// Motor defaults
+// DC Motor defaults
+#define MOTOR_BOARD     (MOTOR_CONTROLLER_SHIELDMD10)
+#define ENCODER_PIN_A    (2)   // Encoder
+#define ENCODER_PIN_B    (3)   // Encoder
+// BTS7960
+#define MOTOR_ENABLE_PIN_L  (7)
+#define MOTOR_ENABLE_PIN_R  (8)
+#define MOTOR_PWM_PIN_L (9)
+#define MOTOR_PWM_PIN_R (10)
+// SHEILDMD10
+#define MOTOR_DIRECTION_PIN (8)
+#define MOTOR_PWM_PIN (9)
+
+// Stepper Motor defaults
 #define MOTOR_STEP_PIN (7) //12
-#define MOTOR_DIRECTION_PIN (8) //11
+//#define MOTOR_DIRECTION_PIN (8) //11
 #define MOTOR_ENABLE_PIN (9) //10
 #define MOTOR_RAMP_TIME (1500) // milliseconds to accelerate to full speed
 #define MOTOR_MAX_SPEED (25000 * MICROSTEPS_PER_STEP)
