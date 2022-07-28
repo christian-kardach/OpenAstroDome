@@ -8,7 +8,7 @@
   #include "WProgram.h"
 #endif
 
-#include <src/libs/AdvancedStepper/AdvancedStepper.h>
+#include <AdvancedStepper.h>
 //#include <XBeeStateMachine.h>
 #include "Command.h"
 #include "Response.h"

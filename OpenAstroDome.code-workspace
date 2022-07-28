@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "Dome"
+		},
+		{
+			"path": "Shutter"
+		},
+		{
+			"path": "SharedCode"
+		},
+		{
+			"path": "SharedLibs"
+		}
+	],
+	"settings": {}
+}

@@ -6,9 +6,9 @@
 
 #include <ArduinoSTL.h>
 // #include <src/libs/SafeSerial/src/SafeSerial.h>
-#include <src/libs/AdvancedStepper/AdvancedStepper.h>
+#include <AdvancedStepper.h>
 //#include <XBeeApi.h>
-#include <src/libs/Timer/Timer.h>
+#include <Timer.h>
 // #include "RainSensor.h"
 #include "NexDome.h"
 #include "PersistentSettings.h"
@@ -172,7 +172,7 @@ void heartbeat()
 {
 	static bool state = false;
 	state = !state;
-	// digitalWrite(LED_BUILTIN, state ? HIGH : LOW);
+	digitalWrite(LED_BUILTIN, state ? HIGH : LOW);
 }
 
 // the loop function runs over and over again until power down or reset

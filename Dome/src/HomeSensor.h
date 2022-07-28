@@ -9,7 +9,7 @@
 	#include "WProgram.h"
 #endif
 
-#include <src/libs/AdvancedStepper/AdvancedStepper.h>
+#include <AdvancedStepper.h>
 #include "CommandProcessor.h"
 
 enum HomingPhase

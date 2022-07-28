@@ -48,7 +48,7 @@ constexpr int32_t MinStepPosition = -2000000000L;
 #define HOST_SERIAL_RX_BUFFER_SIZE (16) // Receive buffer for PC/USB communications
 
 // Other hardware assignments
-#define HOME_INDEX_PIN (13) //PIN13
+#define HOME_INDEX_PIN (21) //PIN13
 #define OPEN_LIMIT_SWITCH_PIN (12) //PIN3
 #define CLOSED_LIMIT_SWITCH_PIN (11) //PIN2
 #define OPEN_BUTTON_PIN (A1) //PIN5

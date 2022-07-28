@@ -22,7 +22,7 @@
 struct MotorSettings
 	{
 	uint32_t maxPosition;				// limit of travel, in steps
-	volatile int32_t *currentPosition;	// the current position (potentially updated by ISR)
+	volatile int32_t currentPosition;	// the current position (potentially updated by ISR)
 	uint16_t rampTimeMilliseconds;		// milliseconds to ramp from minSpeed to maxSpeed
 	uint16_t maxSpeed;					// maximum number of steps per second
 	bool directionReversed;				// If true, reverses the rotation direction with respect to the step position
@@ -63,11 +63,6 @@ class DCMotor : public IStepSequencer
 		MotorSettings* configuration;
 
 	private:
-		#if MOTOR_BOARD == MOTOR_CONTROLLER_BTS7960
-			BTS7960::Motor* _rotator;
-		#elif MOTOR_BOARD == MOTOR_CONTROLLER_SHIELDMD10
-			SHIELDMD10::Motor* _rotator;
-		#endif
 		Encoder* _encoder;
 		IStepGenerator* stepGenerator;
 		int direction = +1;
@@ -75,6 +70,7 @@ class DCMotor : public IStepSequencer
 		unsigned long startTime{};
 		float startVelocity{}, currentVelocity, targetVelocity{}, currentAcceleration{};
 		float minSpeed;
+		void initializeHardware() const;
 		float getAcceleratedVelocity() const;
 		float getDeceleratedVelocity() const;
 		float accelerationFromRampTime();

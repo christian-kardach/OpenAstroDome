@@ -50,7 +50,7 @@ void BTS7960::Stop()
     analogWrite(_R_PWM, LOW);
 }
 
-Motor::Motor()
+Motor::Motor(uint8_t n)
 {
     _isRunning = false;
 }

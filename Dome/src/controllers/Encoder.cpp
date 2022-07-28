@@ -1,19 +1,28 @@
 #include "Encoder.h"
 
-Encoder::Encoder(volatile int32_t *currentPosition, uint8_t ENCA, uint8_t ENCB)
+Encoder::Encoder(uint8_t ENCA, uint8_t ENCB)
 {
     _ENCA = ENCA;
     _ENCB = ENCB;
-    _currentPosition = currentPosition;
     pinMode(_ENCA, INPUT_PULLUP);
     pinMode(_ENCB, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(_ENCA),updateEncoder,RISING);
+}
+
+int32_t Encoder::GetPosition()
+{
+    int32_t position = 0;
+    noInterrupts();  // disable interrupts temporarily while reading
+    position = encoderPosition;
+    interrupts(); // turn interrupts back on
+    return position;
 }
 
 void Encoder::updateEncoder(){
-  if(digitalRead(_ENCB) > 0){
-    *_currentPosition++;
-  } else{
-    *_currentPosition++;
-  }
+    int b = digitalRead(Encoder::_ENCB);
+    if(b > 0){
+        Encoder::encoderPosition++;
+    }
+    else{
+        Encoder::encoderPosition--;
+    }
 }
