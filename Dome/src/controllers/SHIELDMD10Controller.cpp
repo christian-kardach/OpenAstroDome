@@ -27,7 +27,7 @@ void SHIELDMD10::Stop()
     analogWrite(_PWM, LOW);
 }
 
-Motor::Motor(uint8_t n)
+Motor::Motor()
 {
     _isRunning = false;
 }

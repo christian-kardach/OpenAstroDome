@@ -29,7 +29,7 @@ class BTS7960
 class Motor
 {
   public:
-    Motor(uint8_t nmotor);
+    Motor();
     void setup();
     void run(int dir, int pwm);
     void stop();
