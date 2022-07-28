@@ -46,57 +46,50 @@ void DCMotor::Step(bool state)
 
 void DCMotor::updatePWM()
 	{
-		long prevT = 0;
-		float eintegral = 0;
-		float pwm = 0;
-
 		// Read the position
 		int32_t currentPosition = 0;
 		noInterrupts(); // disable interrupts temporarily while reading
 		currentPosition = *configuration->currentPosition;
 		interrupts(); // turn interrupts back on
 
-		// positional error
-		int32_t currentPositionError = virtualStepPosition - currentPosition;
-		int32_t distanceToTarget = virtualStepPosition - targetPosition;
+		// calculate distance to target
+		int32_t distanceToTarget = targetPosition - currentPosition;
 
-		// time difference
-		long currentTime = micros();
-		float deltaTime = ((float) (currentTime - previousTime))/( 1.0e6 );
-		previousTime = currentTime;
-
-		// derivative error
-		float dedt = (currentPositionError-positionError)/(deltaTime);
-
-		// integral error
-		integralError = integralError + currentPositionError*deltaTime;
-
-		// control signal
-		float u = DCMOTOR_kp*currentPositionError + DCMOTOR_kd*dedt + DCMOTOR_ki*integralError;
-
-		// motor power
+		// if encoder is outside of deadzone, update PWM control based on PID control. If within deadzone, stop motor
 		if (abs(distanceToTarget) > ROTATOR_DEFAULT_DEADZONE){
-			pwm = fabs(u);
+			// positional error
+			int32_t currentPositionError = virtualStepPosition - currentPosition;
+			// time difference
+			long currentTime = micros();
+			float deltaTime = ((float) (currentTime - previousTime))/( 1.0e6 );
+			previousTime = currentTime;
+			// derivative error
+			float derivativeError = (currentPositionError-positionError)/(deltaTime);
+			// integral error
+			integralError = integralError + currentPositionError*deltaTime;
+			// control signal
+			float u = DCMOTOR_kp*currentPositionError + DCMOTOR_kd*derivativeError + DCMOTOR_ki*integralError;
+
+			float pwm = fabs(u);
 			if( pwm > 255 ){
 				pwm = 255;
 			}
 			isPIDMoving = true;
+
+			// motor direction
+			int dir = 0;
+			if(u<0){
+			dir = 1;
+			}
+
+			// signal the motor
+			_rotator->run(dir, pwm);
+
+			// store previous error
+			positionError = currentPositionError;
 		} else {
 			hardStop();
-			return;
 		}
-
-		// motor direction
-		int dir = 0;
-		if(u<0){
-			dir = 1;
-		}
-
-		// signal the motor
-		_rotator->run(dir, pwm);
-
-		// store previous error
-		positionError = currentPositionError;
 	}
 
 // Energizes the motor coils (applies holding torque) and prepares for stepping.
