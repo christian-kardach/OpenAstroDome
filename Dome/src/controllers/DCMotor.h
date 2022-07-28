@@ -58,6 +58,7 @@ class DCMotor : public IStepSequencer
 		virtual bool isMoving();
 		virtual int8_t getCurrentDirection();
 		int32_t distanceToStop() const;
+		void updatePWM();
 
 	protected:
 		MotorSettings* configuration;
@@ -79,6 +80,11 @@ class DCMotor : public IStepSequencer
 		float getDeceleratedVelocity() const;
 		float accelerationFromRampTime();
 		StopHandler stopHandler;
+		float positionError;
+		float previousTime;
+		float integralError;
+		volatile int32_t virtualStepPosition; //Emulated desired step position as a reference target for PID loop
+		bool isPIDMoving;
 	};
 
 // Motor Parameters (defaults)

@@ -1,30 +1,103 @@
 #include "DCMotor.h"
 
 DCMotor::DCMotor(uint8_t stepPin, uint8_t enablePin, uint8_t directionPin, IStepGenerator& stepper, MotorSettings& settings)
-{
-	//the DCMotor class is made of an encoder and a PWM motor controller board. Inputs and functions are to emulate that of a stepper motor. Each "step" will increment the desired encoder position in the PID control loop
+	{
+		//the DCMotor class is made of an encoder and a PWM motor controller board. Inputs and functions are to emulate that of a stepper motor. Each "step" will increment the desired encoder position in the PID control loop
 
-	#if MOTOR_BOARD == MOTOR_CONTROLLER_BTS7960
-		_rotator = new BTS7960::Motor();
-	#elif MOTOR_BOARD == MOTOR_CONTROLLER_SHIELDMD10
-		_rotator = new SHIELDMD10::Motor();
-	#endif
-	configuration = &settings;
-	currentVelocity = 0;
-    targetPosition = 0;
-	minSpeed = MIN_SPEED;
-	stopHandler = nullptr;
-	_encoder = new Encoder(configuration->currentPosition, ENCODER_PIN_A, ENCODER_PIN_B);
-}
+		#if MOTOR_BOARD == MOTOR_CONTROLLER_BTS7960
+			_rotator = new BTS7960::Motor();
+		#elif MOTOR_BOARD == MOTOR_CONTROLLER_SHIELDMD10
+			_rotator = new SHIELDMD10::Motor();
+		#endif
+		configuration = &settings;
+		currentVelocity = 0;
+		targetPosition = 0;
+		positionError = 0;
+		previousTime = 0;
+		integralError = 0;
+		virtualStepPosition = 0;
+		minSpeed = MIN_SPEED;
+		stopHandler = nullptr;
+		isPIDMoving = false;
+		_encoder = new Encoder(configuration->currentPosition, ENCODER_PIN_A, ENCODER_PIN_B);
+	}
 
 /*
 The Step method will be called from an interrupt service routine, so
 operations must be as short as possible and modify as little state as possible.
 */
 void DCMotor::Step(bool state)
-{
-    //Each step should increment the targetPosition of the motor PID control loop. THe main program loop will need to repeatedly call a function to adjust the PWM based on the PID settings
-}
+	{
+	//digitalWrite(stepPin, state ? HIGH : LOW);
+	if (state)
+		{
+		// Increment position on leading edge.
+		virtualStepPosition += direction;
+		}
+	else
+		{
+		// Check hard limits on falling edge
+		if (configuration->currentPosition == &targetPosition)
+			{
+			hardStop();
+			}
+		}
+	}
+
+void DCMotor::updatePWM()
+	{
+		long prevT = 0;
+		float eintegral = 0;
+		float pwm = 0;
+
+		// Read the position
+		int32_t currentPosition = 0;
+		noInterrupts(); // disable interrupts temporarily while reading
+		currentPosition = *configuration->currentPosition;
+		interrupts(); // turn interrupts back on
+
+		// positional error
+		int32_t currentPositionError = virtualStepPosition - currentPosition;
+		int32_t distanceToTarget = virtualStepPosition - targetPosition;
+
+		// time difference
+		long currentTime = micros();
+		float deltaTime = ((float) (currentTime - previousTime))/( 1.0e6 );
+		previousTime = currentTime;
+
+		// derivative error
+		float dedt = (currentPositionError-positionError)/(deltaTime);
+
+		// integral error
+		integralError = integralError + currentPositionError*deltaTime;
+
+		// control signal
+		float u = DCMOTOR_kp*currentPositionError + DCMOTOR_kd*dedt + DCMOTOR_ki*integralError;
+
+		// motor power
+		if (abs(distanceToTarget) > ROTATOR_DEFAULT_DEADZONE){
+			pwm = fabs(u);
+			if( pwm > 255 ){
+				pwm = 255;
+			}
+			isPIDMoving = true;
+		} else {
+			hardStop();
+			return;
+		}
+
+		// motor direction
+		int dir = 0;
+		if(u<0){
+			dir = 1;
+		}
+
+		// signal the motor
+		_rotator->run(dir, pwm);
+
+		// store previous error
+		positionError = currentPositionError;
+	}
 
 // Energizes the motor coils (applies holding torque) and prepares for stepping.
 // Takes account of direction reversal.
@@ -229,14 +302,19 @@ float DCMotor::getDeceleratedVelocity() const
 */
 void DCMotor::hardStop()
 	{
+	_rotator->stop();
+	isPIDMoving = false;
 	stepGenerator->stop();
 	currentAcceleration = 0;
 	currentVelocity = 0;
 	direction = 0;
+	/*
 	if (!configuration->useHoldingTorque)
 		releaseMotor();
+	*/
 	if (stopHandler != nullptr)
 		stopHandler();
+	
 	}
 
 /*
@@ -252,6 +330,8 @@ void DCMotor::SoftStop()
 
 void DCMotor::loop()
 	{
+	if (isPIDMoving)
+		updatePWM();
 	if (isMoving())
 		ComputeAcceleratedVelocity();
 	}
