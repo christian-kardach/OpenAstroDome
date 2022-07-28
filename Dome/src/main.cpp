@@ -42,10 +42,8 @@ Timer serialInactivityTimer;
 //auto rain = RainSensor(RAIN_SENSOR_PIN);
 
 // cin and cout for ArduinoSTL
-
-	std::ohserialstream cout(Serial);
-	std::ihserialstream cin(Serial);
-
+std::ohserialstream cout(Serial);
+std::ihserialstream cin(Serial);
 
 void DispatchCommand(const Command &command)
 {
