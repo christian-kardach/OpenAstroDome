@@ -59,7 +59,7 @@ void DCMotor::updatePWM()
 		// if encoder is outside of deadzone, update PWM control based on PID control. If within deadzone, stop motor
 		if (abs(distanceToTarget) > ROTATOR_DEFAULT_DEADZONE){
 			// positional error
-			int32_t currentPositionError = virtualStepPosition - currentPosition;
+			//int32_t currentPositionError = virtualStepPosition - currentPosition;
 			int32_t currentPositionError = distanceToTarget;
 			// time difference
 			long currentTime = micros();
@@ -149,8 +149,6 @@ void DCMotor::moveToPosition(int32_t position)
 	energizeMotor();
 	startTime = millis();
 	isPIDMoving = true;
-
-	if (abs(currentVelocity) < minSpeed)
 	/*if (abs(currentVelocity) < minSpeed)
 		{
 		// Starting from rest
@@ -206,6 +204,8 @@ int32_t DCMotor::getCurrentPosition()
 	return *configuration->currentPosition;
 	}
 
+/*
+	Increments/Decrements the current motor position in steps.
 */
 void DCMotor::updateCurrentPosition(bool direction)
 	{

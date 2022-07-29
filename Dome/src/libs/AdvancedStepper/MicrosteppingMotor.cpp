@@ -53,7 +53,7 @@ void MicrosteppingMotor::Step(bool state)
 	else
 		{
 		// Check hard limits on falling edge
-		if (configuration->currentPosition == &targetPosition)
+		if (*configuration->currentPosition == targetPosition)
 			{
 			hardStop();
 			}
