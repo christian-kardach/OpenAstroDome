@@ -6,8 +6,8 @@
 #include <AdvancedStepper.h>
 // #include <XBeeApi.h>
 #include "NexDome.h"
-//#include "XBeeStatemachine.h"
-//#include "XBeeStartupState.h"
+#include "XBeeStatemachine.h"
+#include "XBeeStartupState.h"
 #include "CommandProcessor.h"
 #include "PersistentSettings.h"
 #include "LimitSwitch.h"
@@ -15,140 +15,164 @@
 
 void onMotorStopped(); // Forward reference
 
+// DEBUG
+#include <SoftwareSerial.h>
+//SoftwareSerial *ttl = new SoftwareSerial(4, 5);
+
 Timer periodicTasks;
 auto stepGenerator = CounterTimer1StepGenerator();
 auto settings = PersistentSettings::Load();
 auto stepper = MicrosteppingMotor(MOTOR_STEP_PIN, MOTOR_ENABLE_PIN, MOTOR_DIRECTION_PIN, stepGenerator, settings.motor);
 auto limitSwitches = LimitSwitch(&stepper, OPEN_LIMIT_SWITCH_PIN, CLOSED_LIMIT_SWITCH_PIN);
-auto& xbeeSerial = Serial1;
+// SoftwareSerial &HC12Serial = SoftwareSerial(6, 7); // Serial;
+SoftwareSerial xbeeSerial(6, 7);
 // SafeSerial host;
 std::string hostReceiveBuffer;
 std::vector<byte> xbeeApiRxBuffer;
-// void HandleFrameReceived(FrameType type, const std::vector<byte>& payload); // forward reference
-// auto xbee = XBeeApi(xbeeSerial, xbeeApiRxBuffer, ReceiveHandler(HandleFrameReceived));
-// auto machine = XBeeStateMachine(xbeeSerial, xbee);
-auto batteryMonitor = BatteryMonitor(/*machine,*/ A0, settings.batteryMonitor);
-auto commandProcessor = CommandProcessor(stepper, settings, /*machine,*/ limitSwitches, batteryMonitor);
+void HandleFrameReceived(FrameType type, const std::vector<byte>& payload); // forward reference
+auto xbee = XBeeApi(xbeeSerial, xbeeApiRxBuffer, ReceiveHandler(HandleFrameReceived));
+auto machine = XBeeStateMachine(xbeeSerial, xbee);
+auto batteryMonitor = BatteryMonitor(machine, A0, settings.batteryMonitor);
+auto commandProcessor = CommandProcessor(stepper, settings, machine, limitSwitches, batteryMonitor);
 
 // cin and cout for ArduinoSTL
 
 std::ohserialstream cout(Serial);
 std::ihserialstream cin(Serial);
 
-/*
+
 void HandleFrameReceived(FrameType type, const std::vector<byte>& payload)
 	{
 	machine.onXbeeFrameReceived(type, payload);
 	}
-*/
+
 void ProcessManualControls()
-	{
+{
 	static bool openButtonLastState = false;
 	static bool closeButtonLastState = false;
 	const bool openButtonPressed = digitalRead(OPEN_BUTTON_PIN) == 0;
 	const bool openButtonChanged = openButtonPressed != openButtonLastState;
 	if (openButtonChanged && openButtonPressed)
-		{
+	{
 		commandProcessor.sendOpenNotification();
 		stepper.moveToPosition(MaxStepPosition);
-		}
+	}
 	if (openButtonChanged && !openButtonPressed)
-		{
+	{
 		stepper.SoftStop();
-		}
+	}
 	openButtonLastState = openButtonPressed;
 	const bool closedButtonPressed = digitalRead(CLOSE_BUTTON_PIN) == 0;
 	const bool closedButtonChanged = closedButtonPressed != closeButtonLastState;
 	if (closedButtonChanged && closedButtonPressed)
-		{
+	{
 		commandProcessor.sendCloseNotification();
 		stepper.moveToPosition(MinStepPosition);
-		}
+	}
 	if (closedButtonChanged && !closedButtonPressed)
-		{
-		stepper.SoftStop();
-		}
-	closeButtonLastState = closedButtonPressed;
-	}
-
-
-void DispatchCommand(const Command& command)
 	{
-	commandProcessor.HandleCommand(command);
+		stepper.SoftStop();
 	}
+	closeButtonLastState = closedButtonPressed;
+}
 
+void DispatchCommand(const Command &command)
+{
+	commandProcessor.HandleCommand(command);
+}
 
 void HandleSerialCommunications()
 {
-	while (Serial.available() > 0) {
+	while (Serial.available() > 0)
+	{
+
+		const auto rx = Serial.read();
+		if (rx < 0)
+			return; // No data available.
+		const char rxChar = char(rx);
+
+		switch (rxChar)
+		{
+		case '\n': // newline - dispatch the command
+		case '\r': // carriage return - dispatch the command
+			if (hostReceiveBuffer.length() > 1)
+			{
+				const auto command = Command(hostReceiveBuffer);
+				DispatchCommand(command);
+				if (ResponseBuilder::available())
+					std::cout << ResponseBuilder::Message << std::endl; // send response, if there is one.
+				hostReceiveBuffer.clear();
+			}
+			break;
+		case '@': // Start of new command
+			hostReceiveBuffer.clear();
+		default:
+			if (hostReceiveBuffer.length() < HOST_SERIAL_RX_BUFFER_SIZE)
+			{
+				hostReceiveBuffer.push_back(rxChar);
+			}
+			break;
+		}
+	}
+}
+/*
+void handleHC12()
+{
+	while (HC12Serial->available() > 0) {
     
-        const auto rx = Serial.read();
+        const auto rx = HC12Serial->read();
         if (rx < 0)
             return; // No data available.
 		const char rxChar = char(rx);
-		switch (rxChar)
-			{
-			case '\n': // newline - dispatch the command
-			case '\r': // carriage return - dispatch the command
-				if (hostReceiveBuffer.length() > 1)
-					{
-					const auto command = Command(hostReceiveBuffer);
-					DispatchCommand(command);
-					if (ResponseBuilder::available())
-						std::cout << ResponseBuilder::Message << std::endl; // send response, if there is one.
-					hostReceiveBuffer.clear();
-					}
-				break;
-			case '@': // Start of new command
-				hostReceiveBuffer.clear();
-			default:
-				if (hostReceiveBuffer.length() < HOST_SERIAL_RX_BUFFER_SIZE)
-					{
-					hostReceiveBuffer.push_back(rxChar);
-					}
-				break;
-			}
+		Serial.println(rxChar);
 	}
 }
+*/
 
 // the setup function runs once when you press reset or power the board
 void setup()
-	{
+{
 	stepper.releaseMotor();
 	stepper.registerStopHandler(onMotorStopped);
 	pinMode(CLOCKWISE_BUTTON_PIN, INPUT_PULLUP);
 	pinMode(COUNTERCLOCKWISE_BUTTON_PIN, INPUT_PULLUP);
 	hostReceiveBuffer.reserve(HOST_SERIAL_RX_BUFFER_SIZE);
-	// xbeeApiRxBuffer.reserve(API_MAX_FRAME_LENGTH);
+	xbeeApiRxBuffer.reserve(API_MAX_FRAME_LENGTH);
 	Serial.begin(115200);
+	
 	// Connect cin and cout to our SafeSerial instance
 	ArduinoSTL_Serial.connect(Serial);
-	//xbeeSerial.begin(9600);
+	xbeeSerial.begin(9600);
+	// xbeeSerial.begin(9600);
+	
 	periodicTasks.SetDuration(1000);
 	interrupts();
-	// machine.ChangeState(new XBeeStartupState(machine));
+	machine.ChangeState(new XBeeStartupState(machine));
 	limitSwitches.init(); // attaches interrupt vectors
 #if !DEBUG_CONSERVE_FLASH
 	batteryMonitor.initialize(10000);
 #endif
-	}
+	// HC12Serial->println("Shutter Setup Done..");
+	// Serial.println("Shutter Setup Done..");
+}
 
 // the loop function runs over and over again until power down or reset
 void loop()
-	{
+{
 	static std::ostringstream converter;
 	stepper.loop();
 	HandleSerialCommunications();
-	// machine.Loop();
+	machine.Loop();
+	//handleHC12();
 #if !DEBUG_CONSERVE_FLASH
 	batteryMonitor.loop();
 #endif
 	if (periodicTasks.Expired())
-		{
+	{
 		periodicTasks.SetDuration(250);
 		ProcessManualControls();
 		if (stepper.isMoving())
-			{
+		{
 			const auto wholeSteps = commandProcessor.getPositionInWholeSteps();
 			converter.clear();
 			converter.str("");
@@ -156,15 +180,15 @@ void loop()
 #ifdef SHUTTER_LOCAL_OUTPUT
 			std::cout << "S" << std::dec << wholeSteps << std::endl;
 #endif
-			// machine.SendToRemoteXbee(converter.str());
-			}
+			machine.SendToRemoteXbee(converter.str());
+			// HC12Serial->print(converter.str().c_str());
 		}
 	}
-
+}
 
 // Handle the motor stop event from the stepper driver.
 void onMotorStopped()
-	{
+{
 	limitSwitches.onMotorStopped();
 	commandProcessor.sendStatus();
-	}
+}

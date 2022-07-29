@@ -5,37 +5,38 @@
 #endif
 
 #include <ArduinoSTL.h>
-// #include <src/libs/SafeSerial/src/SafeSerial.h>
+// #include <SafeSerial.h>
 #include <AdvancedStepper.h>
-//#include <XBeeApi.h>
+#include <XBeeApi.h>
 #include <Timer.h>
 // #include "RainSensor.h"
 #include "NexDome.h"
 #include "PersistentSettings.h"
 #include "HomeSensor.h"
 #include "CommandProcessor.h"
-// #include "XBeeStartupState.h"
+#include "XBeeStartupState.h"
 // DEBUG
 #include <SoftwareSerial.h>
+
+// For debugging only
 SoftwareSerial* ttl = new SoftwareSerial(4, 5);
 
 constexpr Duration SerialInactivityTimeout = Timer::Minutes(10);
 
 // Forward declarations
-//void onXbeeFrameReceived(FrameType type, std::vector<byte> &payload);
+void onXbeeFrameReceived(FrameType type, std::vector<byte> &payload);
 void onMotorStopped();
 
 // Global scope data
 auto stepGenerator = CounterTimer1StepGenerator();
 auto settings = PersistentSettings::Load();
 auto stepper = MicrosteppingMotor(MOTOR_STEP_PIN, MOTOR_ENABLE_PIN, MOTOR_DIRECTION_PIN, stepGenerator, settings.motor);
-// auto &xbeeSerial = Serial1;
-//Serial host;
+SoftwareSerial xbeeSerial(6, 7);
 std::string hostReceiveBuffer;
 std::vector<byte> xbeeApiRxBuffer;
-//auto xbeeApi = XBeeApi(xbeeSerial, xbeeApiRxBuffer, ReceiveHandler(onXbeeFrameReceived));
-//auto machine = XBeeStateMachine(xbeeSerial, xbeeApi);
-auto commandProcessor = CommandProcessor(stepper, settings/*, machine*/);
+auto xbeeApi = XBeeApi(xbeeSerial, xbeeApiRxBuffer, ReceiveHandler(onXbeeFrameReceived));
+auto machine = XBeeStateMachine(xbeeSerial, xbeeApi);
+auto commandProcessor = CommandProcessor(stepper, settings, ttl, machine);
 auto home = HomeSensor(&stepper, &settings.home, HOME_INDEX_PIN, commandProcessor);
 Timer periodicTasks;
 Timer serialInactivityTimer;
@@ -48,6 +49,7 @@ std::ihserialstream cin(Serial);
 void DispatchCommand(const Command &command)
 {
 	//std::cout << command.RawCommand << "V=" << command.Verb << ", T=" << command.TargetDevice << ", P=" << command.StepPosition << std::endl;
+	ttl->println(command.RawCommand.c_str());
 	commandProcessor.HandleCommand(command);
 }
 
@@ -115,26 +117,23 @@ void setup()
 	pinMode(CLOCKWISE_BUTTON_PIN, INPUT_PULLUP);
 	pinMode(COUNTERCLOCKWISE_BUTTON_PIN, INPUT_PULLUP);
 	hostReceiveBuffer.reserve(HOST_SERIAL_RX_BUFFER_SIZE);
-	//xbeeApiRxBuffer.reserve(API_MAX_FRAME_LENGTH);
-    
+	xbeeApiRxBuffer.reserve(API_MAX_FRAME_LENGTH);
 	Serial.begin(115200);
-
 	// Connect cin and cout to our SafeSerial instance
 	ArduinoSTL_Serial.connect(Serial);
-    
-	// xbeeSerial.begin(9600);
+	xbeeSerial.begin(9600);
 	delay(1000); // Let the USB/serial stack warm up a bit longer.
-	// xbeeApi.reset();
+	xbeeApi.reset();
 	periodicTasks.SetDuration(1000);
 	HomeSensor::init();
-	//rain.init(Timer::Seconds(30));
+	// rain.init(Timer::Seconds(30));
 	pinMode(LED_BUILTIN, OUTPUT);
 	interrupts();
-	//machine.ChangeState(new XBeeStartupState(machine));
-    
-    // Serial.begin(115200);
+	machine.ChangeState(new XBeeStartupState(machine));
+
     ttl->begin(115200);
     ttl->println("---------------------");
+	// Serial1.println("HC-12 TEST");
 }
 
 void ProcessManualControls()
@@ -175,13 +174,26 @@ void heartbeat()
 	digitalWrite(LED_BUILTIN, state ? HIGH : LOW);
 }
 
+void handleHC12()
+{
+	while (Serial1.available() > 0) {
+    
+        const auto rx = Serial1.read();
+        if (rx < 0)
+            return; // No data available.
+		const char rxChar = char(rx);
+		ttl->println(rxChar);
+	}
+}
+
 // the loop function runs over and over again until power down or reset
 void loop()
 {
 	stepper.loop();
 	HandleSerialCommunications();
     
-	// machine.Loop();
+	machine.Loop();
+	//handleHC12();
 	if (periodicTasks.Expired())
 	{
 		periodicTasks.SetDuration(250);
@@ -199,13 +211,13 @@ void loop()
 		}
 	}
 }
-/*
+
 // Handle the received XBee API frame by passing it to the XBee state machine.
 void onXbeeFrameReceived(FrameType type, std::vector<byte> &payload)
 {
-	//machine.onXbeeFrameReceived(type, payload);
+	machine.onXbeeFrameReceived(type, payload);
 }
-*/
+
 
 // Handle the motor stop event from the stepper driver.
 void onMotorStopped()

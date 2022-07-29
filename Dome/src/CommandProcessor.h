@@ -4,12 +4,13 @@
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
 #include "ArduinoSTL.h"
+#include "SoftwareSerial.h"
 #else
   #include "WProgram.h"
 #endif
 
 #include <AdvancedStepper.h>
-//#include <XBeeStateMachine.h>
+#include <XBeeStateMachine.h>
 #include "Command.h"
 #include "Response.h"
 
@@ -18,7 +19,7 @@ struct PersistentSettings;
 class CommandProcessor
 	{
 public:
-	CommandProcessor(MicrosteppingMotor& rotator, PersistentSettings& settings/*, XBeeStateMachine& machine*/);
+	CommandProcessor(MicrosteppingMotor& rotator, PersistentSettings& settings, SoftwareSerial* ttl, XBeeStateMachine& machine);
 	static void responseToHost(const std::string& rxMessage);
 	void HandleCommand(const Command& command) const;
 	uint32_t getNormalizedPositionInMicrosteps() const;
@@ -63,7 +64,8 @@ private:
 	int32_t getDeadZoneWholeSteps() const;
 	MicrosteppingMotor& rotator;
 	PersistentSettings& settings;
-	// XBeeStateMachine& machine;
+	SoftwareSerial* ttl;
+	XBeeStateMachine& machine;
 	};
 
 #endif

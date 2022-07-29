@@ -9,6 +9,7 @@
 
 #include <ArduinoSTL.h>
 #include <AdvancedStepper.h>
+#include <SoftwareSerial.h>
 // #include <XBeeStateMachine.h>
 #include "PersistentSettings.h"
 #include "Command.h"
@@ -18,7 +19,7 @@
 class CommandProcessor
 	{
 	public:
-		CommandProcessor(MicrosteppingMotor& motor, PersistentSettings& settings, /*XBeeStateMachine& machine, */LimitSwitch& limits, BatteryMonitor& monitor);
+		CommandProcessor(MicrosteppingMotor& motor, PersistentSettings& settings, XBeeStateMachine& machine, LimitSwitch& limits, BatteryMonitor& monitor);
 		void HandleCommand(const Command& command); // sets the global static response
 		static int32_t microstepsToSteps(int32_t microsteps);
 		static int32_t stepsToMicrosteps(int32_t wholeSteps);
@@ -51,7 +52,7 @@ class CommandProcessor
 		MicrosteppingMotor& motor;
 		PersistentSettings& settings;
 		LimitSwitch& limitSwitches;
-		// XBeeStateMachine& machine;
+		XBeeStateMachine& machine;
 		BatteryMonitor& battery;
 	};
 

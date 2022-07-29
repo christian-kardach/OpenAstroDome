@@ -5,8 +5,8 @@
 
 extern void DispatchCommand(const Command& command);
 
-BatteryMonitor::BatteryMonitor(/*XBeeStateMachine& machine, */uint8_t analogPin, BatteryMonitorSettings& settings) :
-    /*machine(machine),*/
+BatteryMonitor::BatteryMonitor(XBeeStateMachine& machine, uint8_t analogPin, BatteryMonitorSettings& settings) :
+    machine(machine),
     movingAverageVoltage(settings.sampleWindow), analogPin(analogPin), settings(settings)
 	{
 	sampleTimer.Stop();

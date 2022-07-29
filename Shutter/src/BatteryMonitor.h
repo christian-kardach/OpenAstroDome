@@ -6,7 +6,7 @@
 
 #include <Arduino.h>
 #include <Timer.h>
-// #include <XBeeStatemachine.h>
+#include <XBeeStatemachine.h>
 #include "MovingAverage.h"
 
 struct BatteryMonitorSettings
@@ -21,13 +21,13 @@ struct BatteryMonitorSettings
 class BatteryMonitor
 	{
 public:
-	explicit BatteryMonitor(/*XBeeStateMachine& machine, */uint8_t analogPin, BatteryMonitorSettings& settings);
+	explicit BatteryMonitor(XBeeStateMachine& machine, uint8_t analogPin, BatteryMonitorSettings& settings);
 	void initialize(unsigned long initialDelay);
 	void loop();
 	bool lowVolts();
 private:
 	void checkThresholdAndSendNotification();
-	// XBeeStateMachine& machine;
+	XBeeStateMachine& machine;
 	MovingAverage<uint16_t> movingAverageVoltage;
 	Timer sampleTimer;
 	Timer notificationTimer;
