@@ -53,7 +53,7 @@ void MicrosteppingMotor::Step(bool state)
 	else
 		{
 		// Check hard limits on falling edge
-		if (*configuration->currentPosition == targetPosition)
+		if (configuration->currentPosition == targetPosition)
 			{
 			hardStop();
 			}
@@ -100,7 +100,7 @@ void MicrosteppingMotor::setRampTime(uint16_t milliseconds)
 */
 void MicrosteppingMotor::moveToPosition(int32_t position)
 	{
-	const int32_t deltaPosition = position - *configuration->currentPosition;
+	const int32_t deltaPosition = position - configuration->currentPosition;
 	targetPosition = position;
 	direction = sgn(deltaPosition);
 	targetVelocity = configuration->maxSpeed * direction;
@@ -128,7 +128,7 @@ void MicrosteppingMotor::moveToPosition(int32_t position)
 */
 void MicrosteppingMotor::SetCurrentPosition(int32_t position)
 	{
-	*configuration->currentPosition = position;
+	configuration->currentPosition = position;
 	}
 
 /*
@@ -157,7 +157,7 @@ float MicrosteppingMotor::getCurrentVelocity() const
 */
 int32_t MicrosteppingMotor::getCurrentPosition()
 	{
-	return *configuration->currentPosition;
+	return configuration->currentPosition;
 	}
 
 int32_t MicrosteppingMotor::midpointPosition() const

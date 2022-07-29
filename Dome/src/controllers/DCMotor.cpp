@@ -37,7 +37,7 @@ void DCMotor::Step(bool state)
 	else
 		{
 		// Check hard limits on falling edge
-		if (*configuration->currentPosition == targetPosition)
+		if (configuration->currentPosition == targetPosition)
 			{
 			hardStop();
 			}
@@ -49,7 +49,7 @@ void DCMotor::updatePWM()
 		// Read the position
 		int32_t currentPosition = 0;
 		noInterrupts(); // disable interrupts temporarily while reading
-		currentPosition = *configuration->currentPosition;
+		currentPosition = configuration->currentPosition;
 		interrupts(); // turn interrupts back on
 
 		// calculate distance to target
@@ -141,7 +141,7 @@ void DCMotor::setRampTime(uint16_t milliseconds)
 */
 void DCMotor::moveToPosition(int32_t position)
 	{
-	const int32_t deltaPosition = position - *configuration->currentPosition;
+	const int32_t deltaPosition = position - configuration->currentPosition;
 	targetPosition = position;
 	direction = sgn(deltaPosition);
 	targetVelocity = configuration->maxSpeed * direction;
@@ -172,7 +172,7 @@ void DCMotor::moveToPosition(int32_t position)
 */
 void DCMotor::SetCurrentPosition(int32_t position)
 	{
-	*configuration->currentPosition = position;
+	configuration->currentPosition = position;
 	}
 
 /*
@@ -201,7 +201,7 @@ float DCMotor::getCurrentVelocity() const
 */
 int32_t DCMotor::getCurrentPosition()
 	{
-	return *configuration->currentPosition;
+	return configuration->currentPosition;
 	}
 
 /*
@@ -210,9 +210,9 @@ int32_t DCMotor::getCurrentPosition()
 void DCMotor::updateCurrentPosition(bool direction)
 	{
 	if (direction)
-		(*configuration->currentPosition)++;
+		(configuration->currentPosition)++;
 	else
-		(*configuration->currentPosition)--;
+		(configuration->currentPosition)--;
 	}
 	
 int32_t DCMotor::midpointPosition() const

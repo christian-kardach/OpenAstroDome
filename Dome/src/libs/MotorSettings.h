@@ -3,7 +3,7 @@
 struct MotorSettings
 	{
 	uint32_t maxPosition;				// limit of travel, in steps
-	volatile int32_t *currentPosition;	// the current position (potentially updated by ISR)
+	volatile int32_t currentPosition;	// the current position (potentially updated by ISR)
 	uint16_t rampTimeMilliseconds;		// milliseconds to ramp from minSpeed to maxSpeed
 	uint16_t maxSpeed;					// maximum number of steps per second
 	bool directionReversed;				// If true, reverses the rotation direction with respect to the step position

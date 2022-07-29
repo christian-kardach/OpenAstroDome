@@ -194,7 +194,7 @@ void loop()
 		Serial.print(testTarget);
 		int32_t temp;
 		stepper.updateCurrentPosition(1);
-		temp = *(stepper.configuration->currentPosition);
+		temp = (stepper.configuration->currentPosition);
 		Serial.println();
 		Serial.print("Position: ");
 		Serial.print(temp);

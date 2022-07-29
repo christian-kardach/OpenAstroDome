@@ -5,7 +5,7 @@
 class Encoder
 {
   public:
-    Encoder(volatile int32_t *currentPosition, uint8_t ENCA, uint8_t ENCB);
+    Encoder(volatile int32_t &currentPosition, uint8_t ENCA, uint8_t ENCB);
     static void updateEncoder();
   
   private:
