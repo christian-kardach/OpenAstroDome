@@ -84,14 +84,15 @@ void DCMotor::updatePWM()
 			dir = 1;
 			}
 
-			//Serial.println();
-			//Serial.print("distanceToTarget: ");
-			//Serial.print(distanceToTarget);
-			//Serial.print(" - currentPosition: ");
-			//Serial.print(currentPosition);
-			//Serial.print(" - pwm: ");
-			//Serial.print(pwm);
-			// signal the motor
+			Serial.println();
+			Serial.print("distanceToTarget: ");
+			Serial.print(distanceToTarget);
+			Serial.print(" - currentPosition: ");
+			Serial.print(currentPosition);
+			Serial.print(" - u: ");
+			Serial.print(u);
+			Serial.print(" - dir: ");
+			Serial.print(dir);			// signal the motor
 			_rotator->run(dir, pwm);
 
 			// store previous error
@@ -112,6 +113,18 @@ void DCMotor::energizeMotor() const
 void DCMotor::releaseMotor()
 	{
 		_rotator->stop();
+	}
+
+void DCMotor::test()
+	{
+		_rotator->run(0, 255);
+		delay(2000);
+		_rotator->run(0, 0);
+		delay(500);
+		_rotator->run(1, 255);
+		delay(2000);
+		_rotator->run(0, 0);
+		delay(500);
 	}
 
 /*

@@ -12,10 +12,8 @@ Encoder::Encoder(volatile int32_t &currentPosition, uint8_t ENCA, uint8_t ENCB)
 
 void Encoder::updateEncoder(){
   if(digitalRead(_ENCB) > 0){
-    (*_currentPosition)++;
-    Serial.println("increment encoder");
-  } else{
     (*_currentPosition)--;
-    Serial.println("decrement encoder");
+  } else{
+    (*_currentPosition)++;
   }
 }
