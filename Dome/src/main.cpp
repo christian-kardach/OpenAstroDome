@@ -6,7 +6,8 @@
 
 #include <ArduinoSTL.h>
 // #include <src/libs/SafeSerial/src/SafeSerial.h>
-#include <src/libs/AdvancedStepper/AdvancedStepper.h>
+//#include <src/libs/AdvancedStepper/AdvancedStepper.h>
+#include <src/controllers/DCMotor.h>
 //#include <XBeeApi.h>
 #include <src/libs/Timer/Timer.h>
 // #include "RainSensor.h"
