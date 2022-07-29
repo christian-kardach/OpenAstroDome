@@ -9,7 +9,7 @@ class Encoder
     static void updateEncoder();
   
   private:
-    static uint8_t _ENCA;
-    static uint8_t _ENCB;
-    static volatile int32_t *_currentPosition;
+    inline static uint8_t _ENCA;
+    inline static uint8_t _ENCB;
+    inline static volatile int32_t *_currentPosition;
 };

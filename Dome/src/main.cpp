@@ -28,17 +28,20 @@ void onMotorStopped();
 // Global scope data
 auto stepGenerator = CounterTimer1StepGenerator();
 auto settings = PersistentSettings::Load();
-auto stepper = MicrosteppingMotor(MOTOR_STEP_PIN, MOTOR_ENABLE_PIN, MOTOR_DIRECTION_PIN, stepGenerator, settings.motor);
+//auto stepper = MicrosteppingMotor(MOTOR_STEP_PIN, MOTOR_ENABLE_PIN, MOTOR_DIRECTION_PIN, stepGenerator, settings.motor);
+auto stepper = DCMotor(MOTOR_STEP_PIN, MOTOR_ENABLE_PIN, MOTOR_DIRECTION_PIN, stepGenerator, settings.motor);
 // auto &xbeeSerial = Serial1;
 //Serial host;
 std::string hostReceiveBuffer;
 std::vector<byte> xbeeApiRxBuffer;
 //auto xbeeApi = XBeeApi(xbeeSerial, xbeeApiRxBuffer, ReceiveHandler(onXbeeFrameReceived));
 //auto machine = XBeeStateMachine(xbeeSerial, xbeeApi);
-auto commandProcessor = CommandProcessor(stepper, settings/*, machine*/);
-auto home = HomeSensor(&stepper, &settings.home, HOME_INDEX_PIN, commandProcessor);
+//auto commandProcessor = CommandProcessor(stepper, settings/*, machine*/);
+//auto home = HomeSensor(&stepper, &settings.home, HOME_INDEX_PIN, commandProcessor);
 Timer periodicTasks;
 Timer serialInactivityTimer;
+unsigned int timer = millis();
+int32_t testTarget = 6000;
 //auto rain = RainSensor(RAIN_SENSOR_PIN);
 
 // cin and cout for ArduinoSTL
@@ -48,7 +51,7 @@ std::ihserialstream cin(Serial);
 void DispatchCommand(const Command &command)
 {
 	//std::cout << command.RawCommand << "V=" << command.Verb << ", T=" << command.TargetDevice << ", P=" << command.StepPosition << std::endl;
-	commandProcessor.HandleCommand(command);
+	//commandProcessor.HandleCommand(command);
 }
 
 /*
@@ -112,29 +115,29 @@ void setup()
     
 	stepper.releaseMotor();
 	stepper.registerStopHandler(onMotorStopped);
-	pinMode(CLOCKWISE_BUTTON_PIN, INPUT_PULLUP);
-	pinMode(COUNTERCLOCKWISE_BUTTON_PIN, INPUT_PULLUP);
-	hostReceiveBuffer.reserve(HOST_SERIAL_RX_BUFFER_SIZE);
+	//pinMode(CLOCKWISE_BUTTON_PIN, INPUT_PULLUP);
+	//pinMode(COUNTERCLOCKWISE_BUTTON_PIN, INPUT_PULLUP);
+	//hostReceiveBuffer.reserve(HOST_SERIAL_RX_BUFFER_SIZE);
 	//xbeeApiRxBuffer.reserve(API_MAX_FRAME_LENGTH);
     
 	Serial.begin(115200);
 
 	// Connect cin and cout to our SafeSerial instance
-	ArduinoSTL_Serial.connect(Serial);
+	//ArduinoSTL_Serial.connect(Serial);
     
 	// xbeeSerial.begin(9600);
 	delay(1000); // Let the USB/serial stack warm up a bit longer.
 	// xbeeApi.reset();
-	periodicTasks.SetDuration(1000);
-	HomeSensor::init();
+	//periodicTasks.SetDuration(1000);
+	//HomeSensor::init();
 	//rain.init(Timer::Seconds(30));
-	pinMode(LED_BUILTIN, OUTPUT);
+	//pinMode(LED_BUILTIN, OUTPUT);
 	interrupts();
 	//machine.ChangeState(new XBeeStartupState(machine));
     
     // Serial.begin(115200);
-    ttl->begin(115200);
-    ttl->println("---------------------");
+    //ttl->begin(115200);
+    //ttl->println("---------------------");
 }
 
 void ProcessManualControls()
@@ -179,10 +182,17 @@ void heartbeat()
 void loop()
 {
 	stepper.loop();
-	HandleSerialCommunications();
+	if (millis() > timer + 30000){
+		timer = millis();
+		//change target
+		testTarget = testTarget * (-1);
+		Serial.println("Target: " + testTarget);
+		stepper.moveToPosition(testTarget);
+	}
+	//HandleSerialCommunications();
     
 	// machine.Loop();
-	if (periodicTasks.Expired())
+	/*if (periodicTasks.Expired())
 	{
 		periodicTasks.SetDuration(250);
 		heartbeat();
@@ -197,7 +207,7 @@ void loop()
 			//stepper.releaseMotor();
 			serialInactivityTimer.Stop();
 		}
-	}
+	}*/
 }
 /*
 // Handle the received XBee API frame by passing it to the XBee state machine.
@@ -212,7 +222,7 @@ void onMotorStopped()
 {
 	//std::cout << "STOP" << std::endl;
 	// First, "normalize" the step position
-	settings.motor.currentPosition = commandProcessor.getNormalizedPositionInMicrosteps();
-	home.onMotorStopped();
-	commandProcessor.sendStatus();
+	//settings.motor.currentPosition = commandProcessor.getNormalizedPositionInMicrosteps();
+	//home.onMotorStopped();
+	//commandProcessor.sendStatus();
 }

@@ -54,6 +54,7 @@ void DCMotor::updatePWM()
 
 		// calculate distance to target
 		int32_t distanceToTarget = targetPosition - currentPosition;
+		//Serial.println(currentPosition + " " + virtualStepPosition + " " + targetPosition);
 
 		// if encoder is outside of deadzone, update PWM control based on PID control. If within deadzone, stop motor
 		if (abs(distanceToTarget) > ROTATOR_DEFAULT_DEADZONE){
