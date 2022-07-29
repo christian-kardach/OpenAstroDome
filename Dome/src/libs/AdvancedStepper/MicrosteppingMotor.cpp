@@ -128,7 +128,7 @@ void MicrosteppingMotor::moveToPosition(int32_t position)
 */
 void MicrosteppingMotor::SetCurrentPosition(int32_t position)
 	{
-	configuration->currentPosition = &position;
+	*configuration->currentPosition = position;
 	}
 
 /*

@@ -42,6 +42,7 @@ class DCMotor : public IStepSequencer
 		void ComputeAcceleratedVelocity();
 		virtual void moveToPosition(int32_t position);
 		void SetCurrentPosition(int32_t position);
+		void updateCurrentPosition(bool direction);
 		void SetLimitOfTravel(uint32_t limit);
 		void setMaximumSpeed(uint16_t speed);
 		float getCurrentVelocity() const;
@@ -54,8 +55,6 @@ class DCMotor : public IStepSequencer
 		virtual int8_t getCurrentDirection();
 		int32_t distanceToStop() const;
 		void updatePWM();
-
-	protected:
 		MotorSettings* configuration;
 
 	private:

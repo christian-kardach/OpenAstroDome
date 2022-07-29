@@ -37,7 +37,7 @@ void DCMotor::Step(bool state)
 	else
 		{
 		// Check hard limits on falling edge
-		if (configuration->currentPosition == &targetPosition)
+		if (*configuration->currentPosition == targetPosition)
 			{
 			hardStop();
 			}
@@ -60,6 +60,7 @@ void DCMotor::updatePWM()
 		if (abs(distanceToTarget) > ROTATOR_DEFAULT_DEADZONE){
 			// positional error
 			int32_t currentPositionError = virtualStepPosition - currentPosition;
+			int32_t currentPositionError = distanceToTarget;
 			// time difference
 			long currentTime = micros();
 			float deltaTime = ((float) (currentTime - previousTime))/( 1.0e6 );
@@ -83,6 +84,13 @@ void DCMotor::updatePWM()
 			dir = 1;
 			}
 
+			//Serial.println();
+			//Serial.print("distanceToTarget: ");
+			//Serial.print(distanceToTarget);
+			//Serial.print(" - currentPosition: ");
+			//Serial.print(currentPosition);
+			//Serial.print(" - pwm: ");
+			//Serial.print(pwm);
 			// signal the motor
 			_rotator->run(dir, pwm);
 
@@ -143,10 +151,14 @@ void DCMotor::moveToPosition(int32_t position)
 	isPIDMoving = true;
 
 	if (abs(currentVelocity) < minSpeed)
+	/*if (abs(currentVelocity) < minSpeed)
 		{
 		// Starting from rest
 		startVelocity = minSpeed * direction;
 		currentVelocity = startVelocity;
+		Serial.println();
+		Serial.print("startstepgenerator1");
+		delay(1000);
 		stepGenerator->start(minSpeed, this);
 		}
 	else
@@ -154,7 +166,7 @@ void DCMotor::moveToPosition(int32_t position)
 		// Starting with the motor already in motion
 		startVelocity = currentVelocity;
 		stepGenerator->setStepRate(abs(startVelocity));
-		}
+		}*/
 	}
 
 /*
@@ -162,7 +174,7 @@ void DCMotor::moveToPosition(int32_t position)
 */
 void DCMotor::SetCurrentPosition(int32_t position)
 	{
-	configuration->currentPosition = &position;
+	*configuration->currentPosition = position;
 	}
 
 /*
@@ -194,6 +206,15 @@ int32_t DCMotor::getCurrentPosition()
 	return *configuration->currentPosition;
 	}
 
+*/
+void DCMotor::updateCurrentPosition(bool direction)
+	{
+	if (direction)
+		(*configuration->currentPosition)++;
+	else
+		(*configuration->currentPosition)--;
+	}
+	
 int32_t DCMotor::midpointPosition() const
 	{
 	return configuration->maxPosition / 2;
@@ -299,7 +320,7 @@ void DCMotor::hardStop()
 	{
 	_rotator->stop();
 	isPIDMoving = false;
-	stepGenerator->stop();
+	//stepGenerator->stop();
 	currentAcceleration = 0;
 	currentVelocity = 0;
 	direction = 0;
@@ -327,8 +348,8 @@ void DCMotor::loop()
 	{
 	if (isPIDMoving)
 		updatePWM();
-	if (isMoving())
-		ComputeAcceleratedVelocity();
+	//if (isMoving())
+	//	ComputeAcceleratedVelocity();
 	}
 
 /*

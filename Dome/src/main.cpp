@@ -41,7 +41,7 @@ std::vector<byte> xbeeApiRxBuffer;
 //auto home = HomeSensor(&stepper, &settings.home, HOME_INDEX_PIN, commandProcessor);
 Timer periodicTasks;
 Timer serialInactivityTimer;
-unsigned int timer = millis();
+unsigned long timer = millis();
 int32_t testTarget = 6000;
 //auto rain = RainSensor(RAIN_SENSOR_PIN);
 
@@ -116,6 +116,7 @@ void setup()
     
 	stepper.releaseMotor();
 	stepper.registerStopHandler(onMotorStopped);
+	stepper.SetCurrentPosition(0);
 	//pinMode(CLOCKWISE_BUTTON_PIN, INPUT_PULLUP);
 	//pinMode(COUNTERCLOCKWISE_BUTTON_PIN, INPUT_PULLUP);
 	//hostReceiveBuffer.reserve(HOST_SERIAL_RX_BUFFER_SIZE);
@@ -133,6 +134,7 @@ void setup()
 	//HomeSensor::init();
 	//rain.init(Timer::Seconds(30));
 	//pinMode(LED_BUILTIN, OUTPUT);
+	Serial.print("Serial initialized");
 	interrupts();
 	//machine.ChangeState(new XBeeStartupState(machine));
     
@@ -183,11 +185,21 @@ void heartbeat()
 void loop()
 {
 	stepper.loop();
-	if (millis() > timer + 30000){
+	if (millis() > timer + 1000){
 		timer = millis();
 		//change target
 		testTarget = testTarget * (-1);
-		Serial.println("Target: " + testTarget);
+		Serial.println();
+		Serial.print("Target: ");
+		Serial.print(testTarget);
+		int32_t temp;
+		stepper.updateCurrentPosition(1);
+		temp = *(stepper.configuration->currentPosition);
+		Serial.println();
+		Serial.print("Position: ");
+		Serial.print(temp);
+		Serial.print(" - Get Position: ");
+		Serial.print(stepper.getCurrentPosition());
 		stepper.moveToPosition(testTarget);
 	}
 	//HandleSerialCommunications();
