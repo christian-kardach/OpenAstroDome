@@ -134,10 +134,6 @@ void setup()
 	//HomeSensor::init();
 	//rain.init(Timer::Seconds(30));
 	//pinMode(LED_BUILTIN, OUTPUT);
-	Serial.print("Serial initialized");
-	Serial.println();
-	Serial.print("Target: ");
-	Serial.print(testTarget);
 	interrupts();
 	//machine.ChangeState(new XBeeStartupState(machine));
     
