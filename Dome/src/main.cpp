@@ -187,8 +187,8 @@ void heartbeat()
 // the loop function runs over and over again until power down or reset
 void loop()
 {
-	//stepper.loop();
-	/*if (millis() > timer + 10000){
+	stepper.loop();
+	if (millis() > timer + 10000){
 		timer = millis();
 		//change target
 		testTarget = testTarget * (-1);
@@ -203,8 +203,7 @@ void loop()
 		Serial.print("Position: ");
 		Serial.print(stepper.getCurrentPosition());
 		stepper.moveToPosition(testTarget);
-	}*/
-	stepper.test();
+	}
 	//HandleSerialCommunications();
     
 	// machine.Loop();

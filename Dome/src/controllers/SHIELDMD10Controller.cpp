@@ -4,7 +4,9 @@ namespace SHIELDMD10
 {
 Motor::Motor()
 {
-    _isRunning = false;
+    _isRunning = false;    
+    pinMode(MOTOR_DIRECTION_PIN, OUTPUT);
+    pinMode(MOTOR_PWM_PIN, OUTPUT);
 }
 
 void Motor::run(int dir, int pwm)  // dir is 0 or 1

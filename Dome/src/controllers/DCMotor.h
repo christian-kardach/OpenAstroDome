@@ -30,7 +30,6 @@ class DCMotor : public IStepSequencer
 	{
 	public:
 		DCMotor(uint8_t stepPin, uint8_t enablePin, uint8_t directionPin, IStepGenerator& stepper, MotorSettings& settings);
-		void test();
 		virtual void Step(bool state) final;
 		//void MoveAtVelocity(float stepsPerSecond);
 		void energizeMotor() const;

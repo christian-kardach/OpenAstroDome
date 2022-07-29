@@ -22,7 +22,7 @@ constexpr int32_t MinStepPosition = -2000000000L;
 #define ENCODER_PIN_A    (2)   // Encoder
 #define ENCODER_PIN_B    (3)   // Encoder
 // PID constants
-const float DCMOTOR_kp = 1;
+const float DCMOTOR_kp = 0.5;
 const float DCMOTOR_kd = 0.025;
 const float DCMOTOR_ki = 0.0;
 // BTS7960

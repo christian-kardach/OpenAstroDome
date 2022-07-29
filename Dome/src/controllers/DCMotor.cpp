@@ -115,18 +115,6 @@ void DCMotor::releaseMotor()
 		_rotator->stop();
 	}
 
-void DCMotor::test()
-	{
-		_rotator->run(0, 255);
-		delay(2000);
-		_rotator->run(0, 0);
-		delay(500);
-		_rotator->run(1, 255);
-		delay(2000);
-		_rotator->run(0, 0);
-		delay(500);
-	}
-
 /*
  * Registers a method to be called whenever the motor stops.
  */
