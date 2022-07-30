@@ -15,91 +15,47 @@ DCMotor::DCMotor(uint8_t stepPin, uint8_t enablePin, uint8_t directionPin, IStep
 		positionError = 0;
 		previousTime = 0;
 		integralError = 0;
-		virtualStepPosition = 0;
 		minSpeed = MIN_SPEED;
 		stopHandler = nullptr;
-		isPIDMoving = false;
+		accelerationPID.DCMOTOR_kp = DCMOTOR_kp_A;
+		accelerationPID.DCMOTOR_ki = DCMOTOR_ki_A;
+		accelerationPID.DCMOTOR_kd = DCMOTOR_kd_A;
+		runPID.DCMOTOR_kp = DCMOTOR_kp_R;
+		runPID.DCMOTOR_ki = DCMOTOR_ki_R;
+		runPID.DCMOTOR_kd = DCMOTOR_kd_R;
 		_encoder = new Encoder(configuration->currentPosition, ENCODER_PIN_A, ENCODER_PIN_B);
 	}
 
-/*
 The Step method will be called from an interrupt service routine, so
 operations must be as short as possible and modify as little state as possible.
 */
 void DCMotor::Step(bool state)
 	{
-	//digitalWrite(stepPin, state ? HIGH : LOW);
-	if (state)
-		{
-		// Increment position on leading edge.
-		virtualStepPosition += direction;
-		}
-	else
-		{
-		// Check hard limits on falling edge
-		if (configuration->currentPosition == targetPosition)
-			{
-			hardStop();
-			}
-		}
+		// Not used
 	}
 
-void DCMotor::updatePWM()
+PWMSettings DCMotor::calcFromPID(int32_t currentPosition, PIDSettings PIDConstants)
 	{
-		// Read the position
-		int32_t currentPosition = 0;
-		noInterrupts(); // disable interrupts temporarily while reading
-		currentPosition = configuration->currentPosition;
-		interrupts(); // turn interrupts back on
+		// positional error
+		int32_t currentPositionError = targetPosition - currentPosition;
 
-		// calculate distance to target
-		int32_t distanceToTarget = targetPosition - currentPosition;
-		//Serial.println(currentPosition + " " + virtualStepPosition + " " + targetPosition);
-
-		// if encoder is outside of deadzone, update PWM control based on PID control. If within deadzone, stop motor
-		if (abs(distanceToTarget) > ROTATOR_DEFAULT_DEADZONE){
-			// positional error
-			//int32_t currentPositionError = virtualStepPosition - currentPosition;
-			int32_t currentPositionError = distanceToTarget;
-			// time difference
-			long currentTime = micros();
-			float deltaTime = ((float) (currentTime - previousTime))/( 1.0e6 );
-			previousTime = currentTime;
-			// derivative error
-			float derivativeError = (currentPositionError-positionError)/(deltaTime);
-			// integral error
-			integralError = integralError + currentPositionError*deltaTime;
-			// control signal
-			float u = DCMOTOR_kp*currentPositionError + DCMOTOR_kd*derivativeError + DCMOTOR_ki*integralError;
-
-			float pwm = fabs(u);
-			if( pwm > 255 ){
-				pwm = 255;
-			}
-			isPIDMoving = true;
-
-			// motor direction
-			int dir = 0;
-			if(u<0){
-			dir = 1;
-			}
-
-			Serial.println();
-			Serial.print("distanceToTarget: ");
-			Serial.print(distanceToTarget);
-			Serial.print(" - currentPosition: ");
-			Serial.print(currentPosition);
-			Serial.print(" - u: ");
-			Serial.print(u);
-			Serial.print(" - dir: ");
-			Serial.print(dir);			// signal the motor
-			_rotator->run(dir, pwm);
-
-			// store previous error
-			positionError = currentPositionError;
-		} else {
-			hardStop();
-		}
+		// time difference
+		long currentTime = micros();
+		float deltaTime = ((float) (currentTime - previousTime))/( 1.0e6 );
+		previousTime = currentTime;
+		// derivative error
+		float derivativeError = (currentPositionError-positionError)/(deltaTime);
+		// integral error
+		integralError = integralError + currentPositionError*deltaTime;
+		// store previous error for future calculation
+		positionError = currentPositionError;
+		// control signal
+		PWMSettings pwm;
+		pwm.pwm = PIDConstants.DCMOTOR_kp*currentPositionError + PIDConstants.DCMOTOR_kd*derivativeError + PIDConstants.DCMOTOR_ki*integralError;
+		pwm.dir = 0;
+		if (pwm.pwm < 0)
+			pwm.dir = 1;
+		return pwm;
 	}
 
 // Energizes the motor coils (applies holding torque) and prepares for stepping.
@@ -128,11 +84,6 @@ void DCMotor::setRampTime(uint16_t milliseconds)
 	configuration->rampTimeMilliseconds = milliseconds;
 	}
 
-
-
-
-
-
 /*
 	Configures the motor to move to an absolute step position. Unless interrupted,
 	the motor will commence stepping at minSpeed and will accelerate uniformly
@@ -142,30 +93,23 @@ void DCMotor::setRampTime(uint16_t milliseconds)
 */
 void DCMotor::moveToPosition(int32_t position)
 	{
-	const int32_t deltaPosition = position - configuration->currentPosition;
+	positionError = position - getCurrentPosition();
 	targetPosition = position;
-	direction = sgn(deltaPosition);
+	direction = sgn(positionError);
 	targetVelocity = configuration->maxSpeed * direction;
 	currentAcceleration = accelerationFromRampTime() * direction;
-	energizeMotor();
 	startTime = millis();
-	isPIDMoving = true;
-	/*if (abs(currentVelocity) < minSpeed)
+	if (abs(currentVelocity) < minSpeed)
 		{
 		// Starting from rest
 		startVelocity = minSpeed * direction;
 		currentVelocity = startVelocity;
-		Serial.println();
-		Serial.print("startstepgenerator1");
-		delay(1000);
-		stepGenerator->start(minSpeed, this);
 		}
 	else
 		{
 		// Starting with the motor already in motion
 		startVelocity = currentVelocity;
-		stepGenerator->setStepRate(abs(startVelocity));
-		}*/
+		}
 	}
 
 /*
@@ -205,17 +149,6 @@ int32_t DCMotor::getCurrentPosition()
 	return configuration->currentPosition;
 	}
 
-/*
-	Increments/Decrements the current motor position in steps.
-*/
-void DCMotor::updateCurrentPosition(bool direction)
-	{
-	if (direction)
-		(configuration->currentPosition)++;
-	else
-		(configuration->currentPosition)--;
-	}
-	
 int32_t DCMotor::midpointPosition() const
 	{
 	return configuration->maxPosition / 2;
@@ -320,18 +253,11 @@ float DCMotor::getDeceleratedVelocity() const
 void DCMotor::hardStop()
 	{
 	_rotator->stop();
-	isPIDMoving = false;
-	//stepGenerator->stop();
 	currentAcceleration = 0;
 	currentVelocity = 0;
 	direction = 0;
-	/*
-	if (!configuration->useHoldingTorque)
-		releaseMotor();
-	*/
 	if (stopHandler != nullptr)
 		stopHandler();
-	
 	}
 
 /*
@@ -347,10 +273,8 @@ void DCMotor::SoftStop()
 
 void DCMotor::loop()
 	{
-	if (isPIDMoving)
-		updatePWM();
-	//if (isMoving())
-	//	ComputeAcceleratedVelocity();
+	if (isMoving())
+		ComputeAcceleratedVelocity();
 	}
 
 /*
@@ -363,5 +287,18 @@ void DCMotor::ComputeAcceleratedVelocity()
 	const float computedSpeed = min(abs(accelerationCurve), abs(decelerationCurve));
 	const float constrainedSpeed = constrain(computedSpeed, minSpeed, configuration->maxSpeed);
 	currentVelocity = constrainedSpeed * direction;
-	stepGenerator->setStepRate(constrainedSpeed);	// Step rate must be positive
+	int32_t currentPosition = getCurrentPosition();
+	int32_t currentPositionError = targetPosition - currentPosition;
+	PIDSettings PIDConstants;
+	if (millis() < (configuration->rampTimeMilliseconds + startTime)) // Use acceleration PID settings when ramping up
+		PIDConstants = accelerationPID;
+	else
+		PIDConstants = runPID;
+	if (abs(targetPosition - currentPosition) > ROTATOR_DEFAULT_DEADZONE){
+		pwm = calcFromPID(currentPosition, PIDConstants);
+		pwm.pwm = constrain(abs(pwm.pwm), MOTOR_MIN_PWM, 255);
+		_rotator->run(pwm.dir,static_cast<int>(pwm.pwm));
+	} else {
+		hardStop();
+	}
 	}

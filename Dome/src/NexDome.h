@@ -21,10 +21,15 @@ constexpr int32_t MinStepPosition = -2000000000L;
 #define MOTOR_BOARD     (MOTOR_CONTROLLER_SHIELDMD10)
 #define ENCODER_PIN_A    (2)   // Encoder
 #define ENCODER_PIN_B    (3)   // Encoder
-// PID constants
-const float DCMOTOR_kp = 0.5;
-const float DCMOTOR_kd = 0.025;
-const float DCMOTOR_ki = 0.0;
+#define MOTOR_MIN_PWM   (60)    // Minimum PWM setting needed to move the motor
+// Acceleration PID constants
+const float DCMOTOR_kp_A = 0.01;
+const float DCMOTOR_ki_A = 0.5;
+const float DCMOTOR_kd_A = 0.02;
+// Running PID constants
+const float DCMOTOR_kp_R = 0.4;
+const float DCMOTOR_ki_R = 0.0;
+const float DCMOTOR_kd_R = 0.02;
 // BTS7960
 #define MOTOR_ENABLE_PIN_L  (7)
 #define MOTOR_ENABLE_PIN_R  (8)

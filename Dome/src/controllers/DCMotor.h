@@ -26,6 +26,18 @@
 
 typedef void (*StopHandler) ();
 
+	{
+		float DCMOTOR_kp;
+		float DCMOTOR_ki;
+		float DCMOTOR_kd;
+	};
+
+struct PWMSettings
+	{
+		float pwm;
+		bool dir;
+	};
+
 class DCMotor : public IStepSequencer
 	{
 	public:
@@ -42,7 +54,6 @@ class DCMotor : public IStepSequencer
 		void ComputeAcceleratedVelocity();
 		virtual void moveToPosition(int32_t position);
 		void SetCurrentPosition(int32_t position);
-		void updateCurrentPosition(bool direction);
 		void SetLimitOfTravel(uint32_t limit);
 		void setMaximumSpeed(uint16_t speed);
 		float getCurrentVelocity() const;
@@ -54,7 +65,6 @@ class DCMotor : public IStepSequencer
 		virtual bool isMoving();
 		virtual int8_t getCurrentDirection();
 		int32_t distanceToStop() const;
-		void updatePWM();
 		MotorSettings* configuration;
 
 	private:
@@ -77,8 +87,11 @@ class DCMotor : public IStepSequencer
 		float positionError;
 		float previousTime;
 		float integralError;
-		volatile int32_t virtualStepPosition; //Emulated desired step position as a reference target for PID loop
-		bool isPIDMoving;
+		PWMSettings calcFromPID(int32_t currentPosition, PIDSettings PIDConstants);
+		PIDSettings accelerationPID;
+		PIDSettings runPID;
+		PWMSettings pwm;
+		unsigned long PIDtimer;
 	};
 
 // Motor Parameters (defaults)

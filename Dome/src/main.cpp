@@ -188,16 +188,6 @@ void loop()
 		timer = millis();
 		//change target
 		testTarget = testTarget * (-1);
-		Serial.println();
-		Serial.print("Target: ");
-		Serial.print(testTarget);
-		stepper.moveToPosition(testTarget);
-	}
-	if (millis() > timer2 + 1000){
-		timer2 = millis();
-		Serial.println();
-		Serial.print("Position: ");
-		Serial.print(stepper.getCurrentPosition());
 		stepper.moveToPosition(testTarget);
 	}
 	//HandleSerialCommunications();
