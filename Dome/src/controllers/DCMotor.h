@@ -26,6 +26,7 @@
 
 typedef void (*StopHandler) ();
 
+struct PIDSettings
 	{
 		float DCMOTOR_kp;
 		float DCMOTOR_ki;

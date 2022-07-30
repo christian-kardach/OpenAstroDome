@@ -26,9 +26,6 @@ DCMotor::DCMotor(uint8_t stepPin, uint8_t enablePin, uint8_t directionPin, IStep
 		_encoder = new Encoder(configuration->currentPosition, ENCODER_PIN_A, ENCODER_PIN_B);
 	}
 
-The Step method will be called from an interrupt service routine, so
-operations must be as short as possible and modify as little state as possible.
-*/
 void DCMotor::Step(bool state)
 	{
 		// Not used
