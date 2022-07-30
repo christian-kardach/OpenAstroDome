@@ -6,7 +6,8 @@
 
 #include <ArduinoSTL.h>
 // #include <src/libs/SafeSerial/src/SafeSerial.h>
-#include <src/libs/AdvancedStepper/AdvancedStepper.h>
+//#include <src/libs/AdvancedStepper/AdvancedStepper.h>
+#include <src/controllers/DCMotor.h>
 //#include <XBeeApi.h>
 #include <src/libs/Timer/Timer.h>
 // #include "RainSensor.h"
@@ -28,7 +29,11 @@ void onMotorStopped();
 // Global scope data
 auto stepGenerator = CounterTimer1StepGenerator();
 auto settings = PersistentSettings::Load();
+#if MOTOR_TYPE == STEPPER_MOTOR
 auto stepper = MicrosteppingMotor(MOTOR_STEP_PIN, MOTOR_ENABLE_PIN, MOTOR_DIRECTION_PIN, stepGenerator, settings.motor);
+#elif MOTOR_TYPE == DC_MOTOR
+auto stepper = DCMotor(MOTOR_STEP_PIN, MOTOR_ENABLE_PIN, MOTOR_DIRECTION_PIN, stepGenerator, settings.motor);
+#endif
 // auto &xbeeSerial = Serial1;
 //Serial host;
 std::string hostReceiveBuffer;
