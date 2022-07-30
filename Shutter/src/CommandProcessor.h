@@ -10,7 +10,7 @@
 #include <ArduinoSTL.h>
 #include <AdvancedStepper.h>
 #include <SoftwareSerial.h>
-// #include <XBeeStateMachine.h>
+#include <XBeeStateMachine.h>
 #include "PersistentSettings.h"
 #include "Command.h"
 #include "Response.h"

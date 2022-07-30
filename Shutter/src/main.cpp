@@ -8,6 +8,8 @@
 #include "NexDome.h"
 #include "XBeeStatemachine.h"
 #include "XBeeStartupState.h"
+#include "XBeeWaitForCommandModeState.h"
+#include "XBeeOnlineState.h"
 #include "CommandProcessor.h"
 #include "PersistentSettings.h"
 #include "LimitSwitch.h"
@@ -15,21 +17,16 @@
 
 void onMotorStopped(); // Forward reference
 
-// DEBUG
-#include <SoftwareSerial.h>
-//SoftwareSerial *ttl = new SoftwareSerial(4, 5);
-
 Timer periodicTasks;
 auto stepGenerator = CounterTimer1StepGenerator();
 auto settings = PersistentSettings::Load();
 auto stepper = MicrosteppingMotor(MOTOR_STEP_PIN, MOTOR_ENABLE_PIN, MOTOR_DIRECTION_PIN, stepGenerator, settings.motor);
 auto limitSwitches = LimitSwitch(&stepper, OPEN_LIMIT_SWITCH_PIN, CLOSED_LIMIT_SWITCH_PIN);
-// SoftwareSerial &HC12Serial = SoftwareSerial(6, 7); // Serial;
 SoftwareSerial xbeeSerial(6, 7);
 // SafeSerial host;
 std::string hostReceiveBuffer;
 std::vector<byte> xbeeApiRxBuffer;
-void HandleFrameReceived(FrameType type, const std::vector<byte>& payload); // forward reference
+void HandleFrameReceived(FrameType type, const std::vector<byte> &payload); // forward reference
 auto xbee = XBeeApi(xbeeSerial, xbeeApiRxBuffer, ReceiveHandler(HandleFrameReceived));
 auto machine = XBeeStateMachine(xbeeSerial, xbee);
 auto batteryMonitor = BatteryMonitor(machine, A0, settings.batteryMonitor);
@@ -40,11 +37,10 @@ auto commandProcessor = CommandProcessor(stepper, settings, machine, limitSwitch
 std::ohserialstream cout(Serial);
 std::ihserialstream cin(Serial);
 
-
-void HandleFrameReceived(FrameType type, const std::vector<byte>& payload)
-	{
+void HandleFrameReceived(FrameType type, const std::vector<byte> &payload)
+{
 	machine.onXbeeFrameReceived(type, payload);
-	}
+}
 
 void ProcessManualControls()
 {
@@ -85,12 +81,10 @@ void HandleSerialCommunications()
 {
 	while (Serial.available() > 0)
 	{
-
 		const auto rx = Serial.read();
 		if (rx < 0)
 			return; // No data available.
 		const char rxChar = char(rx);
-
 		switch (rxChar)
 		{
 		case '\n': // newline - dispatch the command
@@ -115,19 +109,6 @@ void HandleSerialCommunications()
 		}
 	}
 }
-/*
-void handleHC12()
-{
-	while (HC12Serial->available() > 0) {
-    
-        const auto rx = HC12Serial->read();
-        if (rx < 0)
-            return; // No data available.
-		const char rxChar = char(rx);
-		Serial.println(rxChar);
-	}
-}
-*/
 
 // the setup function runs once when you press reset or power the board
 void setup()
@@ -139,21 +120,20 @@ void setup()
 	hostReceiveBuffer.reserve(HOST_SERIAL_RX_BUFFER_SIZE);
 	xbeeApiRxBuffer.reserve(API_MAX_FRAME_LENGTH);
 	Serial.begin(115200);
-	
+
 	// Connect cin and cout to our SafeSerial instance
 	ArduinoSTL_Serial.connect(Serial);
 	xbeeSerial.begin(9600);
 	// xbeeSerial.begin(9600);
-	
+
 	periodicTasks.SetDuration(1000);
 	interrupts();
 	machine.ChangeState(new XBeeStartupState(machine));
+	// machine.ChangeState(new XBeeOnlineState(machine));
 	limitSwitches.init(); // attaches interrupt vectors
 #if !DEBUG_CONSERVE_FLASH
 	batteryMonitor.initialize(10000);
 #endif
-	// HC12Serial->println("Shutter Setup Done..");
-	// Serial.println("Shutter Setup Done..");
 }
 
 // the loop function runs over and over again until power down or reset
@@ -161,9 +141,8 @@ void loop()
 {
 	static std::ostringstream converter;
 	stepper.loop();
-	HandleSerialCommunications();
+	// HandleSerialCommunications();
 	machine.Loop();
-	//handleHC12();
 #if !DEBUG_CONSERVE_FLASH
 	batteryMonitor.loop();
 #endif
@@ -181,7 +160,6 @@ void loop()
 			std::cout << "S" << std::dec << wholeSteps << std::endl;
 #endif
 			machine.SendToRemoteXbee(converter.str());
-			// HC12Serial->print(converter.str().c_str());
 		}
 	}
 }
