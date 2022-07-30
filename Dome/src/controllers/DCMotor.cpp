@@ -96,6 +96,8 @@ void DCMotor::moveToPosition(int32_t position)
 	targetVelocity = configuration->maxSpeed * direction;
 	currentAcceleration = accelerationFromRampTime() * direction;
 	startTime = millis();
+	previousTime = startTime;
+	integralError = 0;
 	if (abs(currentVelocity) < minSpeed)
 		{
 		// Starting from rest
