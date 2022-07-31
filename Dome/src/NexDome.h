@@ -12,6 +12,7 @@
 constexpr int32_t MaxStepPosition = 2000000000L;
 constexpr int32_t MinStepPosition = -2000000000L;
 
+#define MOTOR_TYPE  (DC_MOTOR) // See Constants.h for options
 // Motor Parameters
 #define MICROSTEPS_PER_STEP (8) // Should match DIP switches on stepper driver
 #define MIN_SPEED (250)         // Minimum speed that can be timed by the hardware timer
