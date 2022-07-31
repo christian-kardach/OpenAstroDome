@@ -11,7 +11,7 @@ DCMotor::DCMotor(uint8_t stepPin, uint8_t enablePin, uint8_t directionPin, IStep
 		#endif
 		configuration = &settings;
 		currentVelocity = 0;
-		targetPosition = 0;
+		targetPosition = configuration->currentPosition;
 		positionError = 0;
 		previousTime = 0;
 		integralError = 0;
@@ -289,6 +289,11 @@ void DCMotor::ComputeAcceleratedVelocity()
 	int32_t currentPosition = getCurrentPosition();
 	int32_t currentPositionError = targetPosition - currentPosition;
 	PIDSettings PIDConstants;
+	Serial.println();
+	Serial.print("currentPositionError: ");
+	Serial.print(currentPositionError);
+	Serial.print(" - currentPosition: ");
+	Serial.print(currentPosition);
 	if (millis() < (configuration->rampTimeMilliseconds + startTime)) // Use acceleration PID settings when ramping up
 		PIDConstants = accelerationPID;
 	else
