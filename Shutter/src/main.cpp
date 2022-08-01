@@ -4,7 +4,7 @@
 #include <sstream>
 // #include <SafeSerial.h>
 #include <AdvancedStepper.h>
-// #include <XBeeApi.h>
+#include <XBeeApi.h>
 #include "NexDome.h"
 #include "XBeeStatemachine.h"
 #include "XBeeStartupState.h"
@@ -22,8 +22,8 @@ auto stepGenerator = CounterTimer1StepGenerator();
 auto settings = PersistentSettings::Load();
 auto stepper = MicrosteppingMotor(MOTOR_STEP_PIN, MOTOR_ENABLE_PIN, MOTOR_DIRECTION_PIN, stepGenerator, settings.motor);
 auto limitSwitches = LimitSwitch(&stepper, OPEN_LIMIT_SWITCH_PIN, CLOSED_LIMIT_SWITCH_PIN);
-SoftwareSerial xbeeSerial(6, 7);
-// SafeSerial host;
+auto &xbeeSerial = Serial1;
+HardwareSerial host(Serial);
 std::string hostReceiveBuffer;
 std::vector<byte> xbeeApiRxBuffer;
 void HandleFrameReceived(FrameType type, const std::vector<byte> &payload); // forward reference
@@ -79,34 +79,33 @@ void DispatchCommand(const Command &command)
 
 void HandleSerialCommunications()
 {
-	while (Serial.available() > 0)
+	if (!host || host.available() <= 0)
+		return; // No data available.
+	const auto rx = host.read();
+	if (rx < 0)
+		return; // No data available.
+	const char rxChar = char(rx);
+	switch (rxChar)
 	{
-		const auto rx = Serial.read();
-		if (rx < 0)
-			return; // No data available.
-		const char rxChar = char(rx);
-		switch (rxChar)
+	case '\n': // newline - dispatch the command
+	case '\r': // carriage return - dispatch the command
+		if (hostReceiveBuffer.length() > 1)
 		{
-		case '\n': // newline - dispatch the command
-		case '\r': // carriage return - dispatch the command
-			if (hostReceiveBuffer.length() > 1)
-			{
-				const auto command = Command(hostReceiveBuffer);
-				DispatchCommand(command);
-				if (ResponseBuilder::available())
-					std::cout << ResponseBuilder::Message << std::endl; // send response, if there is one.
-				hostReceiveBuffer.clear();
-			}
-			break;
-		case '@': // Start of new command
+			const auto command = Command(hostReceiveBuffer);
+			DispatchCommand(command);
+			if (ResponseBuilder::available())
+				std::cout << ResponseBuilder::Message << std::endl; // send response, if there is one.
 			hostReceiveBuffer.clear();
-		default:
-			if (hostReceiveBuffer.length() < HOST_SERIAL_RX_BUFFER_SIZE)
-			{
-				hostReceiveBuffer.push_back(rxChar);
-			}
-			break;
 		}
+		break;
+	case '@': // Start of new command
+		hostReceiveBuffer.clear();
+	default:
+		if (hostReceiveBuffer.length() < HOST_SERIAL_RX_BUFFER_SIZE)
+		{
+			hostReceiveBuffer.push_back(rxChar);
+		}
+		break;
 	}
 }
 
@@ -124,12 +123,11 @@ void setup()
 	// Connect cin and cout to our SafeSerial instance
 	ArduinoSTL_Serial.connect(Serial);
 	xbeeSerial.begin(9600);
-	// xbeeSerial.begin(9600);
 
 	periodicTasks.SetDuration(1000);
 	interrupts();
 	machine.ChangeState(new XBeeStartupState(machine));
-	// machine.ChangeState(new XBeeOnlineState(machine));
+	machine.ChangeState(new XBeeOnlineState(machine));
 	limitSwitches.init(); // attaches interrupt vectors
 #if !DEBUG_CONSERVE_FLASH
 	batteryMonitor.initialize(10000);
@@ -141,7 +139,7 @@ void loop()
 {
 	static std::ostringstream converter;
 	stepper.loop();
-	// HandleSerialCommunications();
+	HandleSerialCommunications();
 	machine.Loop();
 #if !DEBUG_CONSERVE_FLASH
 	batteryMonitor.loop();

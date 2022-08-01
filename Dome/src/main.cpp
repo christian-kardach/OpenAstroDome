@@ -15,11 +15,6 @@
 #include "HomeSensor.h"
 #include "CommandProcessor.h"
 #include "XBeeStartupState.h"
-// DEBUG
-#include <SoftwareSerial.h>
-
-// For debugging only
-SoftwareSerial* ttl = new SoftwareSerial(4, 5);
 
 constexpr Duration SerialInactivityTimeout = Timer::Minutes(10);
 
@@ -31,7 +26,8 @@ void onMotorStopped();
 auto stepGenerator = CounterTimer1StepGenerator();
 auto settings = PersistentSettings::Load();
 auto stepper = MicrosteppingMotor(MOTOR_STEP_PIN, MOTOR_ENABLE_PIN, MOTOR_DIRECTION_PIN, stepGenerator, settings.motor);
-SoftwareSerial xbeeSerial(6, 7);
+auto &xbeeSerial = Serial1;
+HardwareSerial host(Serial);
 std::string hostReceiveBuffer;
 std::vector<byte> xbeeApiRxBuffer;
 auto xbeeApi = XBeeApi(xbeeSerial, xbeeApiRxBuffer, ReceiveHandler(onXbeeFrameReceived));
@@ -49,7 +45,6 @@ std::ihserialstream cin(Serial);
 void DispatchCommand(const Command &command)
 {
 	//std::cout << command.RawCommand << "V=" << command.Verb << ", T=" << command.TargetDevice << ", P=" << command.StepPosition << std::endl;
-	ttl->println(command.RawCommand.c_str());
 	commandProcessor.HandleCommand(command);
 }
 
@@ -60,40 +55,29 @@ void DispatchCommand(const Command &command)
  */
 void HandleSerialCommunications()
 {
-	while (Serial.available() > 0) {
-    
-        const auto rx = Serial.read();
-        if (rx < 0)
-            return; // No data available.
-    
+	if (!host || host.available() <= 0)
+		return; // No data available.
+	const auto rx = host.read();
+	if (rx < 0)
+		return; // No data available.
 
 	serialInactivityTimer.SetDuration(SerialInactivityTimeout);
 	const char rxChar = char(rx);
-    
 	switch (rxChar)
 	{
 	case '\n': // newline - dispatch the command
 	case '\r': // carriage return - dispatch the command
 		if (hostReceiveBuffer.length() > 1)
 		{
-            ttl->print("Command: ");
-            ttl->println(hostReceiveBuffer.c_str());
-
 			const auto command = Command(hostReceiveBuffer);
 			DispatchCommand(command);
-            
 			hostReceiveBuffer.clear();
 			if (ResponseBuilder::available())
-            {
-                    std::cout
+				std::cout
 					<< ResponseBuilder::header
 					<< ResponseBuilder::Message
 					<< ResponseBuilder::terminator
 					<< std::endl; // send response, if there is one.
-                    ttl->print("Reply: ");
-                    ttl->println(ResponseBuilder::Message.c_str());
-            }
-				
 		}
 		break;
 	case '@': // Start of new command
@@ -105,7 +89,6 @@ void HandleSerialCommunications()
 		}
 		break;
 	}
-   } 
 }
 
 // the setup function runs once when you press reset or power the board
@@ -118,9 +101,9 @@ void setup()
 	pinMode(COUNTERCLOCKWISE_BUTTON_PIN, INPUT_PULLUP);
 	hostReceiveBuffer.reserve(HOST_SERIAL_RX_BUFFER_SIZE);
 	xbeeApiRxBuffer.reserve(API_MAX_FRAME_LENGTH);
-	Serial.begin(115200);
+	host.begin(115200);
 	// Connect cin and cout to our SafeSerial instance
-	ArduinoSTL_Serial.connect(Serial);
+	ArduinoSTL_Serial.connect(host);
 	xbeeSerial.begin(9600);
 	delay(1000); // Let the USB/serial stack warm up a bit longer.
 	xbeeApi.reset();
@@ -130,10 +113,6 @@ void setup()
 	pinMode(LED_BUILTIN, OUTPUT);
 	interrupts();
 	machine.ChangeState(new XBeeStartupState(machine));
-
-    ttl->begin(115200);
-    ttl->println("---------------------");
-	// Serial1.println("HC-12 TEST");
 }
 
 void ProcessManualControls()
