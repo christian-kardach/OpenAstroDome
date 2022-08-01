@@ -1,16 +1,16 @@
 {
 	"folders": [
 		{
-			"path": "Dome"
-		},
-		{
-			"path": "Shutter"
-		},
-		{
 			"path": "SharedCode"
 		},
 		{
 			"path": "SharedLibs"
+		},
+		{
+			"path": "TA.NexDome.Rotator"
+		},
+		{
+			"path": "TA.NexDome.Shutter"
 		}
 	],
 	"settings": {

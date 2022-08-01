@@ -4,8 +4,8 @@
 #include "Version.h"
 #include <sstream>
 
-CommandProcessor::CommandProcessor(MicrosteppingMotor &rotator, PersistentSettings &settings, SoftwareSerial *ttl, XBeeStateMachine& machine)
-	: rotator(rotator), settings(settings), ttl(ttl), machine(machine) {}
+CommandProcessor::CommandProcessor(MicrosteppingMotor &rotator, PersistentSettings &settings, XBeeStateMachine& machine)
+	: rotator(rotator), settings(settings), machine(machine) {}
 
 /*
  * Sends an encapsulated response to the host application

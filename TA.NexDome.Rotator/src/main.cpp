@@ -7,6 +7,7 @@
 #include <ArduinoSTL.h>
 // #include <SafeSerial.h>
 #include <AdvancedStepper.h>
+// #include <DCMotor.h>
 #include <XBeeApi.h>
 #include <Timer.h>
 // #include "RainSensor.h"
@@ -25,6 +26,7 @@ void onMotorStopped();
 // Global scope data
 auto stepGenerator = CounterTimer1StepGenerator();
 auto settings = PersistentSettings::Load();
+//auto stepper = DCMotor(MOTOR_STEP_PIN, MOTOR_ENABLE_PIN, MOTOR_DIRECTION_PIN, stepGenerator, settings.motor);
 auto stepper = MicrosteppingMotor(MOTOR_STEP_PIN, MOTOR_ENABLE_PIN, MOTOR_DIRECTION_PIN, stepGenerator, settings.motor);
 auto &xbeeSerial = Serial1;
 HardwareSerial host(Serial);
@@ -32,7 +34,7 @@ std::string hostReceiveBuffer;
 std::vector<byte> xbeeApiRxBuffer;
 auto xbeeApi = XBeeApi(xbeeSerial, xbeeApiRxBuffer, ReceiveHandler(onXbeeFrameReceived));
 auto machine = XBeeStateMachine(xbeeSerial, xbeeApi);
-auto commandProcessor = CommandProcessor(stepper, settings, ttl, machine);
+auto commandProcessor = CommandProcessor(stepper, settings, machine);
 auto home = HomeSensor(&stepper, &settings.home, HOME_INDEX_PIN, commandProcessor);
 Timer periodicTasks;
 Timer serialInactivityTimer;
@@ -153,26 +155,13 @@ void heartbeat()
 	digitalWrite(LED_BUILTIN, state ? HIGH : LOW);
 }
 
-void handleHC12()
-{
-	while (Serial1.available() > 0) {
-    
-        const auto rx = Serial1.read();
-        if (rx < 0)
-            return; // No data available.
-		const char rxChar = char(rx);
-		ttl->println(rxChar);
-	}
-}
-
 // the loop function runs over and over again until power down or reset
 void loop()
 {
 	stepper.loop();
 	HandleSerialCommunications();
-    
+
 	machine.Loop();
-	//handleHC12();
 	if (periodicTasks.Expired())
 	{
 		periodicTasks.SetDuration(250);

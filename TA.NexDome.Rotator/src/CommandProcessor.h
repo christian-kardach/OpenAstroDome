@@ -19,7 +19,7 @@ struct PersistentSettings;
 class CommandProcessor
 	{
 public:
-	CommandProcessor(MicrosteppingMotor& rotator, PersistentSettings& settings, SoftwareSerial* ttl, XBeeStateMachine& machine);
+	CommandProcessor(MicrosteppingMotor& rotator, PersistentSettings& settings, XBeeStateMachine& machine);
 	static void responseToHost(const std::string& rxMessage);
 	void HandleCommand(const Command& command) const;
 	uint32_t getNormalizedPositionInMicrosteps() const;
